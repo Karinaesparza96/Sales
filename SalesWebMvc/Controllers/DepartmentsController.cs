@@ -3,25 +3,28 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+using SalesWebMvc.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using SalesWebMvc.Models;
+using SalesWebMvc.Services;
+using System.Diagnostics;
+using SalesWebMvc.Services.Exceptions;
 
 namespace SalesWebMvc.Controllers
 {
     public class DepartmentsController : Controller
     {
-        private readonly SalesWebMvcContext _context;
+        private readonly DepartmentService _departmentService;
 
-        public DepartmentsController(SalesWebMvcContext context)
+        public DepartmentsController(DepartmentService context)
         {
-            _context = context;
+            _departmentService = context;
         }
 
         // GET: Departments
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Department.ToListAsync());
+            return View(await _departmentService.FindAllAsync());
         }
 
         // GET: Departments/Details/5
@@ -32,8 +35,8 @@ namespace SalesWebMvc.Controllers
                 return NotFound();
             }
 
-            var department = await _context.Department
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var department = await _departmentService.FindByIdAsync(id.Value);
+
             if (department == null)
             {
                 return NotFound();
@@ -57,8 +60,7 @@ namespace SalesWebMvc.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(department);
-                await _context.SaveChangesAsync();
+                await _departmentService.InsertAsync(department);
                 return RedirectToAction(nameof(Index));
             }
             return View(department);
@@ -72,7 +74,7 @@ namespace SalesWebMvc.Controllers
                 return NotFound();
             }
 
-            var department = await _context.Department.FindAsync(id);
+            var department = await _departmentService.FindByIdAsync(id.Value);
             if (department == null)
             {
                 return NotFound();
@@ -96,12 +98,12 @@ namespace SalesWebMvc.Controllers
             {
                 try
                 {
-                    _context.Update(department);
-                    await _context.SaveChangesAsync();
+                    await _departmentService.UpdateAsync(department);
+
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!DepartmentExists(department.Id))
+                    if (!_departmentService.DepartmentExists(department.Id))
                     {
                         return NotFound();
                     }
@@ -120,17 +122,17 @@ namespace SalesWebMvc.Controllers
         {
             if (id == null)
             {
-                return NotFound();
+                return RedirectToAction(nameof(Error), new { message = "Id not provided" });
             }
 
-            var department = await _context.Department
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (department == null)
+            var obj = await _departmentService.FindByIdAsync(id.Value);
+            if (obj == null)
             {
-                return NotFound();
+                return RedirectToAction(nameof(Error), new { message = "Id not found" });
             }
 
-            return View(department);
+            return View(obj);
+
         }
 
         // POST: Departments/Delete/5
@@ -138,15 +140,27 @@ namespace SalesWebMvc.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var department = await _context.Department.FindAsync(id);
-            _context.Department.Remove(department);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                await _departmentService.RemoveAsync(id);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (IntegrityException e)
+            {
+                return RedirectToAction(nameof(Error), new { message = e.Message});
+            }
         }
 
-        private bool DepartmentExists(int id)
+        public IActionResult Error(string message)
         {
-            return _context.Department.Any(e => e.Id == id);
+            var viewModel = new ErrorViewModel
+            {
+                Message = message,
+                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+            };
+            return View(viewModel);
         }
+
+
     }
 }
