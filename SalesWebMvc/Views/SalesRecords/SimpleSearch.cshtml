@@ -1,4 +1,5 @@
 ﻿@model IEnumerable<SalesWebMvc.Models.SalesRecord>
+
 @{
     ViewData["Title"] = "Simple Search";
 }
@@ -9,17 +10,14 @@
     <div class="container-fluid">
         <form class="navbar-form navbar-left" role="search">
             <div class="form-group">
-                <label for="minDate">Min Date</label>
                 <div class="form-group">
-                    <input type="date" name="minDate" class="form-control" value=@ViewData["minDate"] />
+                    <label for="minDate">Min Date</label>
+                    <input type="date" class="form-control" name="minDate" value=@ViewData["minDate"] />
                 </div>
-            <div class="form-group">
-                <label for="maxDate">Max Date</label>
                 <div class="form-group">
-                        <input type="date" name="maxDate" class="form-control" value=@ViewData["maxDate"] />
+                    <label for="maxDate">Max Date</label>
+                    <input type="date" class="form-control" name="maxDate" value=@ViewData["maxDate"] />
                 </div>
-            </div>
-               
             </div>
             <button type="submit" class="btn btn-primary">Filter</button>
         </form>
@@ -51,6 +49,7 @@
                     <th>
                         @Html.DisplayNameFor(model => model.Status)
                     </th>
+                </tr>
             </thead>
             <tbody>
                 @foreach (var item in Model)
@@ -80,4 +79,3 @@
         </table>
     </div>
 </div>
-
